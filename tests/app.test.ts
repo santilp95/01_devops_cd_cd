@@ -34,4 +34,14 @@ describe("POST /api/sum", () => {
     const res = await request(app).post("/api/sum").send({ a: "x", b: 3 });
     expect(res.statusCode).toBe(400);
   });
+
+  it("rechaza cuando b no es numero", async () => {
+    const res = await request(app).post("/api/sum").send({ a: 2, b: "y" });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it("rechaza cuando no se envia body", async () => {
+    const res = await request(app).post("/api/sum");
+    expect(res.statusCode).toBe(400);
+  });
 });

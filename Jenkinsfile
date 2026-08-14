@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         REGISTRY        = "ghcr.io"
-        IMAGE_NAMESPACE = "TU_USUARIO_GITHUB"   // reemplazar por tu usuario u organización de GitHub
+        IMAGE_NAMESPACE = "santilp95"
         IMAGE_NAME      = "devops-lab-app"
         IMAGE_TAG       = "${env.BUILD_NUMBER}"
         FULL_IMAGE      = "${REGISTRY}/${IMAGE_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}"
