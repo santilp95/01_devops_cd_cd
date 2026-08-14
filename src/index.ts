@@ -18,7 +18,6 @@ interface SumBody {
 }
 
 app.post("/api/sum", (req: Request<unknown, unknown, Partial<SumBody>>, res: Response) => {
-  /* istanbul ignore next -- express.json() ya garantiza req.body como objeto; fallback defensivo */
   const { a, b } = req.body ?? {};
   if (typeof a !== "number" || typeof b !== "number") {
     return res.status(400).json({ error: "a y b deben ser numeros" });
@@ -27,7 +26,6 @@ app.post("/api/sum", (req: Request<unknown, unknown, Partial<SumBody>>, res: Res
 });
 
 const PORT = Number(process.env.PORT) || 3000;
-/* istanbul ignore next -- arranque real del servidor, no aplica en tests unitarios */
 if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`Servidor escuchando en el puerto ${PORT}`);
