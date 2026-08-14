@@ -26,7 +26,7 @@ app.post("/api/sum", (req: Request<unknown, unknown, Partial<SumBody>>, res: Res
   return res.status(200).json({ result: a + b });
 });
 
-const PORT = Number(process.env.PORT) || 3000;
+const PORT = Number(process.env.PORT) || 8080;
 /* istanbul ignore next -- arranque real del servidor, no aplica en tests unitarios */
 if (require.main === module) {
   app.listen(PORT, () => {

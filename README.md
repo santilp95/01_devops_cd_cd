@@ -18,7 +18,7 @@ npm run typecheck   # verificación de tipos (tsc --noEmit)
 npm run lint         # ESLint (reglas TS)
 npm test             # pruebas con Jest + ts-jest + cobertura
 npm run build        # compila TypeScript a dist/
-npm start             # corre dist/index.js en http://localhost:3000
+npm start             # corre dist/index.js en http://localhost:8080
 npm run dev           # alternativa: corre src/index.ts directo con ts-node
 ```
 

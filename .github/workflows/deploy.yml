@@ -1,0 +1,62 @@
+name: Deploy to Cloud Run
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: us-central1
+  SERVICE_NAME: mi-app
+  IMAGE: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/mi-app/mi-app
+  # En eventos workflow_run, github.sha NO es el commit que disparó el CI
+  # (apunta al último commit de la rama por defecto), así que usamos head_sha
+  IMAGE_TAG: ${{ github.event.workflow_run.head_sha }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Solo desplegar si el workflow CI que lo disparó terminó exitosamente
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    permissions:
+      contents: read
+      id-token: write   # requerido para Workload Identity Federation
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+        with:
+          # Checkout del mismo commit que probó el CI, no del último de main
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Autenticar con Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+          token_format: access_token
+
+      - name: Configurar gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Login a Artifact Registry
+        uses: docker/login-action@v3
+        with:
+          registry: us-central1-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+
+      - name: Build y push imagen Docker
+        run: |
+          docker build -t ${{ env.IMAGE }}:${{ env.IMAGE_TAG }} .
+          docker push ${{ env.IMAGE }}:${{ env.IMAGE_TAG }}
+
+      - name: Deploy a Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.SERVICE_NAME }}
+          region: ${{ env.REGION }}
+          image: ${{ env.IMAGE }}:${{ env.IMAGE_TAG }}
