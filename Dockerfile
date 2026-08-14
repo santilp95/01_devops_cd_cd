@@ -1,7 +1,7 @@
 # ---- Etapa de build ----
 FROM node:20-alpine AS build
 WORKDIR /app
-COPY package*.json tsconfig.json ./
+COPY package*.json tsconfig.json tsconfig.build.json ./
 RUN npm ci
 COPY src ./src
 RUN npm run build
