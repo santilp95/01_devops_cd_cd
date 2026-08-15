@@ -130,14 +130,13 @@ Se dispara automáticamente con cada push a `main` mediante `pollSCM('H/5 * * * 
 2. Generar y descargar la clave JSON de esa service account.
 3. En Jenkins: **Manage Jenkins → Credentials** → agregar una credencial tipo *Secret file* con el contenido de la clave JSON:
    - ID: `gcp-service-account-key` (debe coincidir con el `credentialsId` del `Jenkinsfile`).
-4. En el `Jenkinsfile`, reemplazar `TU_PROJECT_ID` por el ID real del proyecto GCP (el mismo que usa `deploy.yml`) y ajustar `REGION`/`SERVICE_NAME` solo si cambiaron respecto al flujo de GitHub Actions.
-5. El repositorio `mi-app` en Artifact Registry probablemente **ya existe** (lo usa `deploy.yml`); solo créalo si aún no corriste ese workflow:
+4. Si el repositorio `mi-app` en Artifact Registry no existe todavía, créalo antes de correr el pipeline:
    ```bash
    gcloud artifacts repositories create mi-app \
      --repository-format=docker \
      --location=us-central1
    ```
-6. Asegurarse de que el agente de Jenkins tenga **Docker** y el **SDK de gcloud** instalados, y que el usuario `jenkins` tenga permisos para usar Docker (`usermod -aG docker jenkins`).
+5. Asegurarse de que el agente de Jenkins tenga **Docker** y el **SDK de gcloud** instalados, y que el usuario `jenkins` tenga permisos para usar Docker (`usermod -aG docker jenkins`).
 
 ## GCP
 
@@ -150,6 +149,12 @@ Resultado final del despliegue: el proyecto de Google Cloud usado por ambos pipe
 **Prueba del API ya desplegado**: petición a `https://mi-app-261835461000.us-central1.run.app/health` respondiendo `200 OK` con `{"status":"ok"}`, confirmando que el deploy (tanto por GitHub Actions como por Jenkins) queda funcionando en producción:
 
 ![Prueba del endpoint /health en Cloud Run](images/gcp/deploy.png)
+
+También se puede probar directo desde la terminal:
+
+```bash
+curl https://mi-app-261835461000.us-central1.run.app/health
+```
 
 ## Estructura del repositorio
 
