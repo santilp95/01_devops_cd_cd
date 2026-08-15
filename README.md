@@ -97,6 +97,30 @@ Se dispara automáticamente con cada push a `main` mediante `pollSCM('H/5 * * * 
 
 > **Importante**: `Jenkinsfile` y `deploy.yml` publican en el **mismo** repositorio de Artifact Registry (`mi-app`) y despliegan al **mismo** servicio de Cloud Run (`mi-app`, `us-central1`) — es intencional, para reusar la infraestructura ya creada por el flujo de GitHub. Ambos ahora reaccionan a un push a `main` (uno vía `workflow_run` casi inmediato, el otro vía poll con hasta 5 min de latencia), así que un mismo commit puede disparar los dos pipelines; no hay conflicto, pero el último en terminar es el que queda como revisión activa en Cloud Run.
 
+**Resumen del pipeline** — job `deploy-cloud-run-pipe`, run #6, los 4 stages (`Checkout`, `Build`, `Deploy`, `Post Actions`) en verde:
+
+![Stages del pipeline de Jenkins](images/cd/stages-jenkins.png)
+
+**Credencial configurada en Jenkins** — la clave de la service account de GCP guardada como *Secret file* (`gcp-service-account-key`), la misma que referencia el `Jenkinsfile`:
+
+![Credencial gcp-service-account-key en Jenkins](images/cd/credentials.png)
+
+**Stage 1 — Checkout**: Jenkins obtiene el `Jenkinsfile` desde GitHub y clona el repositorio:
+
+![Consola: checkout del repositorio](images/cd/console1.png)
+
+**Stage 2 — Build**: construye la imagen Docker y la etiqueta con el número de build y `latest`:
+
+![Consola: build de la imagen Docker](images/cd/console2.png)
+
+**Stage 3 — Deploy (autenticación y push)**: activa la service account, configura el proyecto GCP y publica la imagen en Artifact Registry (el `WARNING` sobre la Cloud Resource Manager API es informativo, no detiene el pipeline):
+
+![Consola: autenticación en GCP y push de la imagen](images/cd/console3.png)
+
+**Stage 3 — Deploy (gcloud run deploy)**: despliega la nueva revisión en Cloud Run, revoca las credenciales temporales y cierra el pipeline con `Finished: SUCCESS`:
+
+![Consola: despliegue en Cloud Run y cierre del pipeline](images/cd/console4.png)
+
 ## Configuración necesaria antes de correr el Jenkinsfile
 
 1. En GCP, crear una service account con estos roles:
@@ -114,6 +138,18 @@ Se dispara automáticamente con cada push a `main` mediante `pollSCM('H/5 * * * 
      --location=us-central1
    ```
 6. Asegurarse de que el agente de Jenkins tenga **Docker** y el **SDK de gcloud** instalados, y que el usuario `jenkins` tenga permisos para usar Docker (`usermod -aG docker jenkins`).
+
+## GCP
+
+Resultado final del despliegue: el proyecto de Google Cloud usado por ambos pipelines (`devop-505501`) y la comprobación de que la app desplegada en Cloud Run responde correctamente.
+
+**Proyecto en Google Cloud Console** (`01 devop`, project ID `devop-505501`), donde vive el servicio de Cloud Run, Artifact Registry y las service accounts usadas por CI/CD:
+
+![Dashboard del proyecto en Google Cloud](images/gcp/cloud_run.png)
+
+**Prueba del API ya desplegado**: petición a `https://mi-app-261835461000.us-central1.run.app/health` respondiendo `200 OK` con `{"status":"ok"}`, confirmando que el deploy (tanto por GitHub Actions como por Jenkins) queda funcionando en producción:
+
+![Prueba del endpoint /health en Cloud Run](images/gcp/deploy.png)
 
 ## Estructura del repositorio
 
