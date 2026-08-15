@@ -2,11 +2,13 @@ pipeline {
     agent any
 
     environment {
-        REGISTRY        = "ghcr.io"
-        IMAGE_NAMESPACE = "santilp95"
-        IMAGE_NAME      = "devops-lab-app"
-        IMAGE_TAG       = "${env.BUILD_NUMBER}"
-        FULL_IMAGE      = "${REGISTRY}/${IMAGE_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}"
+        PROJECT_ID   = "TU_PROJECT_ID"
+        REGION       = "us-central1"
+        REPOSITORY   = "mi-app"
+        SERVICE_NAME = "mi-app"
+        IMAGE_NAME   = "mi-app"
+        IMAGE_TAG    = "${env.BUILD_NUMBER}"
+        IMAGE        = "${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/${IMAGE_NAME}"
     }
 
     options {
@@ -14,38 +16,39 @@ pipeline {
         disableConcurrentBuilds()
     }
 
+    triggers {
+        pollSCM('H/5 * * * *')
+    }
+
     stages {
-        stage('Clonar repositorio') {
+        stage('Checkout') {
             steps {
                 checkout scm
             }
         }
 
-        stage('Construir imagen Docker') {
+        stage('Build') {
             steps {
-                sh "docker build -t ${FULL_IMAGE} ."
+                sh "docker build -t ${IMAGE}:${IMAGE_TAG} -t ${IMAGE}:latest ."
             }
         }
 
-        stage('Escaneo básico de la imagen') {
+        stage('Deploy') {
             steps {
-                sh "docker image inspect ${FULL_IMAGE} > /dev/null"
-                echo "Imagen construida correctamente: ${FULL_IMAGE}"
-            }
-        }
-
-        stage('Publicar imagen en el registro (GHCR)') {
-            steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'ghcr-credentials',
-                    usernameVariable: 'REGISTRY_USER',
-                    passwordVariable: 'REGISTRY_TOKEN'
-                )]) {
+                withCredentials([file(credentialsId: 'gcp-service-account-key', variable: 'GCP_KEY_FILE')]) {
                     sh """
-                        echo "\$REGISTRY_TOKEN" | docker login ${REGISTRY} -u "\$REGISTRY_USER" --password-stdin
-                        docker push ${FULL_IMAGE}
-                        docker tag ${FULL_IMAGE} ${REGISTRY}/${IMAGE_NAMESPACE}/${IMAGE_NAME}:latest
-                        docker push ${REGISTRY}/${IMAGE_NAMESPACE}/${IMAGE_NAME}:latest
+                        gcloud auth activate-service-account --key-file="\$GCP_KEY_FILE"
+                        gcloud config set project ${PROJECT_ID}
+                        gcloud auth configure-docker ${REGION}-docker.pkg.dev --quiet
+
+                        docker push ${IMAGE}:${IMAGE_TAG}
+                        docker push ${IMAGE}:latest
+
+                        gcloud run deploy ${SERVICE_NAME} \
+                            --image=${IMAGE}:${IMAGE_TAG} \
+                            --region=${REGION} \
+                            --platform=managed \
+                            --quiet
                     """
                 }
             }
@@ -54,13 +57,13 @@ pipeline {
 
     post {
         always {
-            sh 'docker logout ${REGISTRY} || true'
+            sh 'gcloud auth revoke --all --quiet || true'
         }
         success {
-            echo "Pipeline CD completado: ${FULL_IMAGE} publicado en ${REGISTRY}."
+            echo "Deploy completado: ${IMAGE}:${IMAGE_TAG} publicado y desplegado en Cloud Run (${SERVICE_NAME})."
         }
         failure {
-            echo "El pipeline CD falló. Revisa el log de la etapa correspondiente."
+            echo "El pipeline falló. Revisa el log de la etapa correspondiente."
         }
     }
 }
