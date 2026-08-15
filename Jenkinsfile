@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        PROJECT_ID   = "TU_PROJECT_ID"
+        PROJECT_ID   = "devop-505501"
         REGION       = "us-central1"
         REPOSITORY   = "mi-app"
         SERVICE_NAME = "mi-app"
