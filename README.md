@@ -1,5 +1,12 @@
 # DevOps Lab App
 
+Repositorio: [https://github.com/santilp95/01_devops_cd_cd](https://github.com/santilp95/01_devops_cd_cd)
+
+**Integrantes**
+
+- Jeisson Alejandro Fuquene Buitrago (jeissonfubu@unisabana.edu.co)
+- Santiago López Amaya (santiagoloam@unisabana.edu.co)
+
 Aplicación web mínima (**Node.js + TypeScript + Express**) usada como caso práctico para el laboratorio técnico de la Actividad 3: **configurar un pipeline CI/CD básico usando GitHub Actions y Jenkins**.
 
 ## Endpoints
@@ -37,6 +44,34 @@ Se dispara automáticamente en cada `push` y en cada `pull_request` hacia `main`
 7. Compilación a JavaScript (`npm run build`), validando que el proyecto compile antes de construir la imagen.
 
 Si cualquier paso falla, el workflow se marca en rojo y bloquea la confianza en ese commit/PR.
+
+**Resumen del run** — commit disparador, estado `Success` y artefacto generado:
+
+![Resumen del pipeline de CI](images/ci/1.png)
+
+**Todos los steps del job**, en el mismo orden que la lista de arriba:
+
+![Lista completa de steps del job](images/ci/2.png)
+
+**Paso 1 — Checkout del código**:
+
+![Checkout del código](images/ci/3.png)
+
+**Pasos 2 a 4 — Configurar Node.js, instalar dependencias y verificación de tipos**:
+
+![Configurar Node.js, instalar dependencias y typecheck](images/ci/4.png)
+
+**Pasos 5 y 6 — Análisis estático (lint) y ejecución de pruebas** (7 tests en verde, 100% de cobertura):
+
+![Lint y ejecución de pruebas](images/ci/5.png)
+
+**Paso 7 — Compilación (`tsc → dist/`) y publicación de la cobertura como artefacto**:
+
+![Compilación y publicación de cobertura](images/ci/6.png)
+
+**Cierre del job** — artefacto subido y limpieza final (`Post` steps):
+
+![Cierre del job](images/ci/7.png)
 
 ### CD — GitHub Actions (`.github/workflows/deploy.yml`)
 
